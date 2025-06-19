@@ -21,6 +21,7 @@
         .icon {
             width: 30px;
             height: 30px;
+            object-fit: cover;
             position: absolute;
             cursor: pointer;
         }
@@ -43,7 +44,7 @@
         function spawnIcon() {
             gameArea.innerHTML = '';
 
-            const isTarget = Math.random() < 0.7; // 70%で正解アイコン
+            const isTarget = Math.random() < 0.5;
             const icon = document.createElement('img');
             icon.classList.add('icon');
             icon.src = isTarget ? 'images/target.png' : 'images/fake.png';
