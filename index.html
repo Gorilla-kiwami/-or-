@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>アイコン見分けゲーム ボタン判定版</title>
+<title>アイコン見分けゲーム 10秒モード付き</title>
 <style>
   body {
     text-align: center;
@@ -29,19 +29,26 @@
   button {
     font-size: 18px;
     padding: 8px 20px;
-    margin: 0 10px;
+    margin: 0 10px 10px 10px;
     cursor: pointer;
+  }
+  #timer {
+    font-size: 20px;
+    margin-top: 10px;
+    font-weight: bold;
   }
 </style>
 </head>
 <body>
-  <h1>アイコン見分けゲーム ボタン判定版</h1>
+  <h1>アイコン見分けゲーム 10秒モード付き</h1>
   <p>スコア: <span id="score">0</span></p>
   <div id="game-area"></div>
   <div id="buttons">
-    <button id="mania-btn">マニア</button>
-    <button id="senior-btn">シニア</button>
+    <button id="mania-btn" disabled>マニア</button>
+    <button id="senior-btn" disabled>シニア</button>
   </div>
+  <button id="start-10sec-btn">次は10秒モードを開始</button>
+  <div id="timer"></div>
 
   <script>
     let score = 0;
@@ -49,11 +56,16 @@
     const scoreDisplay = document.getElementById('score');
     const maniaBtn = document.getElementById('mania-btn');
     const seniorBtn = document.getElementById('senior-btn');
+    const startBtn = document.getElementById('start-10sec-btn');
+    const timerDisplay = document.getElementById('timer');
 
-    let currentIsTarget = null; // 今の画像がtargetかどうか（true/false）
+    let currentIsTarget = null;
+    let timerId = null;
+    let timeLeft = 0;
+    let in10SecMode = false;
 
     function randomPosition() {
-      return Math.floor(Math.random() * 270); // 300 - 30
+      return Math.floor(Math.random() * 270);
     }
 
     function spawnIcon() {
@@ -69,16 +81,25 @@
       gameArea.appendChild(icon);
     }
 
-    function gameOver() {
-      alert('ゲームオーバー！スコア: ' + score);
+    function gameOver(message = 'ゲームオーバー！') {
+      alert(message + ' スコア: ' + score);
+      resetGame();
+    }
+
+    function resetGame() {
       score = 0;
       scoreDisplay.textContent = score;
+      timerDisplay.textContent = '';
+      in10SecMode = false;
+      clearInterval(timerId);
+      timerId = null;
+      maniaBtn.disabled = true;
+      seniorBtn.disabled = true;
+      startBtn.disabled = false;
       spawnIcon();
     }
 
     function checkAnswer(isManiaSelected) {
-      // target.png のときはマニア(true)が正解
-      // fake.png のときはシニア(false)が正解
       if ((currentIsTarget && isManiaSelected) || (!currentIsTarget && !isManiaSelected)) {
         score++;
         scoreDisplay.textContent = score;
@@ -88,11 +109,39 @@
       }
     }
 
-    maniaBtn.addEventListener('click', () => checkAnswer(true));
-    seniorBtn.addEventListener('click', () => checkAnswer(false));
+    function start10SecMode() {
+      in10SecMode = true;
+      score = 0;
+      scoreDisplay.textContent = score;
+      timeLeft = 10;
+      timerDisplay.textContent = `残り時間: ${timeLeft}秒`;
+      maniaBtn.disabled = false;
+      seniorBtn.disabled = false;
+      startBtn.disabled = true;
 
-    spawnIcon();
+      spawnIcon();
+
+      timerId = setInterval(() => {
+        timeLeft--;
+        timerDisplay.textContent = `残り時間: ${timeLeft}秒`;
+        if (timeLeft <= 0) {
+          clearInterval(timerId);
+          timerId = null;
+          gameOver('10秒モード終了！');
+        }
+      }, 1000);
+    }
+
+    maniaBtn.addEventListener('click', () => {
+      if (!maniaBtn.disabled) checkAnswer(true);
+    });
+    seniorBtn.addEventListener('click', () => {
+      if (!seniorBtn.disabled) checkAnswer(false);
+    });
+    startBtn.addEventListener('click', start10SecMode);
+
+    // 初期状態
+    resetGame();
   </script>
 </body>
 </html>
-
