@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アイコン見分けゲーム</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: sans-serif;
+        }
+
+        #game-area {
+            margin: 20px auto;
+            width: 300px;
+            height: 300px;
+            border: 2px solid black;
+            position: relative;
+        }
+
+        .icon {
+            width: 30px;
+            height: 30px;
+            position: absolute;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>アイコン見分けゲーム</h1>
+    <p>スコア: <span id="score">0</span></p>
+    <div id="game-area"></div>
+
+    <script>
+        let score = 0;
+        const gameArea = document.getElementById('game-area');
+        const scoreDisplay = document.getElementById('score');
+
+        function randomPosition() {
+            return Math.floor(Math.random() * 270); // 300px - 30px
+        }
+
+        function spawnIcon() {
+            gameArea.innerHTML = '';
+
+            const isTarget = Math.random() < 0.7; // 70%で正解アイコン
+            const icon = document.createElement('img');
+            icon.classList.add('icon');
+            icon.src = isTarget ? 'images/target.png' : 'images/fake.png';
+            icon.style.top = `${randomPosition()}px`;
+            icon.style.left = `${randomPosition()}px`;
+
+            icon.addEventListener('click', () => {
+                if (isTarget) {
+                    score++;
+                    scoreDisplay.textContent = score;
+                    spawnIcon();
+                } else {
+                    alert('ゲームオーバー！スコア: ' + score);
+                    score = 0;
+                    scoreDisplay.textContent = score;
+                    spawnIcon();
+                }
+            });
+
+            gameArea.appendChild(icon);
+        }
+
+        spawnIcon();
+    </script>
+</body>
+</html>
