@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>アイコン見分けゲーム 10秒モード付き</title>
+<title>アイコン見分けゲーム 通常＆10秒モード切替</title>
 <style>
   body {
     text-align: center;
@@ -21,7 +21,7 @@
     height: 30px;
     object-fit: cover;
     position: absolute;
-    cursor: default; /* 画像はクリックしない */
+    cursor: default;
   }
   #buttons {
     margin-top: 15px;
@@ -37,32 +37,45 @@
     margin-top: 10px;
     font-weight: bold;
   }
+  #mode-buttons {
+    margin: 15px 0;
+  }
 </style>
 </head>
 <body>
-  <h1>アイコン見分けゲーム 10秒モード付き</h1>
+  <h1>アイコン見分けゲーム</h1>
   <p>スコア: <span id="score">0</span></p>
+  <p>10秒モード最高スコア: <span id="best-score">0</span></p>
   <div id="game-area"></div>
+
   <div id="buttons">
     <button id="mania-btn" disabled>マニア</button>
     <button id="senior-btn" disabled>シニア</button>
   </div>
-  <button id="start-10sec-btn">次は10秒モードを開始</button>
+
+  <div id="mode-buttons">
+    <button id="start-normal-btn">通常モード開始</button>
+    <button id="start-10sec-btn">10秒モード開始</button>
+  </div>
+
   <div id="timer"></div>
 
   <script>
     let score = 0;
-    const gameArea = document.getElementById('game-area');
-    const scoreDisplay = document.getElementById('score');
-    const maniaBtn = document.getElementById('mania-btn');
-    const seniorBtn = document.getElementById('senior-btn');
-    const startBtn = document.getElementById('start-10sec-btn');
-    const timerDisplay = document.getElementById('timer');
-
+    let bestScore10sec = 0;
     let currentIsTarget = null;
     let timerId = null;
     let timeLeft = 0;
     let in10SecMode = false;
+
+    const gameArea = document.getElementById('game-area');
+    const scoreDisplay = document.getElementById('score');
+    const bestScoreDisplay = document.getElementById('best-score');
+    const maniaBtn = document.getElementById('mania-btn');
+    const seniorBtn = document.getElementById('senior-btn');
+    const startNormalBtn = document.getElementById('start-normal-btn');
+    const start10SecBtn = document.getElementById('start-10sec-btn');
+    const timerDisplay = document.getElementById('timer');
 
     function randomPosition() {
       return Math.floor(Math.random() * 270);
@@ -81,43 +94,70 @@
       gameArea.appendChild(icon);
     }
 
+    function updateScoreDisplay() {
+      scoreDisplay.textContent = score;
+      bestScoreDisplay.textContent = bestScore10sec;
+    }
+
     function gameOver(message = 'ゲームオーバー！') {
       alert(message + ' スコア: ' + score);
+      if (in10SecMode) {
+        if (score > bestScore10sec) {
+          bestScore10sec = score;
+          alert('最高スコア更新！🎉 ' + bestScore10sec);
+        }
+      }
       resetGame();
     }
 
     function resetGame() {
-      score = 0;
-      scoreDisplay.textContent = score;
-      timerDisplay.textContent = '';
-      in10SecMode = false;
       clearInterval(timerId);
       timerId = null;
+      timeLeft = 0;
+      timerDisplay.textContent = '';
+      score = 0;
+      updateScoreDisplay();
       maniaBtn.disabled = true;
       seniorBtn.disabled = true;
-      startBtn.disabled = false;
+      startNormalBtn.disabled = false;
+      start10SecBtn.disabled = false;
+      in10SecMode = false;
       spawnIcon();
     }
 
     function checkAnswer(isManiaSelected) {
       if ((currentIsTarget && isManiaSelected) || (!currentIsTarget && !isManiaSelected)) {
         score++;
-        scoreDisplay.textContent = score;
+        updateScoreDisplay();
         spawnIcon();
       } else {
         gameOver();
       }
     }
 
+    function startNormalMode() {
+      in10SecMode = false;
+      clearInterval(timerId);
+      timerDisplay.textContent = '';
+      score = 0;
+      updateScoreDisplay();
+      maniaBtn.disabled = false;
+      seniorBtn.disabled = false;
+      startNormalBtn.disabled = true;
+      start10SecBtn.disabled = false;
+      spawnIcon();
+    }
+
     function start10SecMode() {
       in10SecMode = true;
       score = 0;
-      scoreDisplay.textContent = score;
       timeLeft = 10;
+      updateScoreDisplay();
       timerDisplay.textContent = `残り時間: ${timeLeft}秒`;
       maniaBtn.disabled = false;
       seniorBtn.disabled = false;
-      startBtn.disabled = true;
+      startNormalBtn.disabled = false;
+      start10SecBtn.disabled = true;
 
       spawnIcon();
 
@@ -135,13 +175,17 @@
     maniaBtn.addEventListener('click', () => {
       if (!maniaBtn.disabled) checkAnswer(true);
     });
+
     seniorBtn.addEventListener('click', () => {
       if (!seniorBtn.disabled) checkAnswer(false);
     });
-    startBtn.addEventListener('click', start10SecMode);
 
-    // 初期状態
+    startNormalBtn.addEventListener('click', startNormalMode);
+    start10SecBtn.addEventListener('click', start10SecMode);
+
+    // ページ読み込み時は通常モード無効状態にしてアイコン表示だけ
     resetGame();
   </script>
 </body>
 </html>
+
