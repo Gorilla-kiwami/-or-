@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>アイコン見分けゲーム - 進捗メニュー＆グラデ</title>
+<title>アイコン見分けゲーム - 進捗20連続＆継続管理</title>
 <style>
   /* グラデーション背景 */
   body {
@@ -159,6 +159,7 @@
   let correctStreak = 0;
   let maniaStreak = 0;
 
+  // 進捗解除済み管理（消さない仕様）
   const achievementsUnlocked = new Set();
 
   const gameArea = document.getElementById('game-area');
@@ -172,14 +173,14 @@
   const achievementContainer = document.getElementById('achievement-container');
   const achievementList = document.getElementById('achievement-list');
 
-  // 進捗一覧データ（連続400回を除外）
+  // 進捗一覧（マニア連続1～20とその他）
   const progressList = [
-    ...Array.from({length: 10}, (_, i) => {
-      const n = i+1;
+    ...Array.from({length: 20}, (_, i) => {
+      const n = i + 1;
       return {
         name: `マニア${n}連続`,
         condition: () => maniaStreak >= n,
-        prob: Math.pow(0.7, n).toFixed(4)
+        probPercent: (Math.pow(0.7, n) * 100).toFixed(1) + '%'
       };
     }),
     { name: '連続100回', condition: () => correctStreak >= 100 },
@@ -236,7 +237,8 @@
 
     correctStreak = 0;
     maniaStreak = 0;
-    achievementsUnlocked.clear();
+    // achievementsUnlocked はリセットしない
+
     updateAchievementMenu();
 
     spawnIcon();
@@ -246,7 +248,7 @@
     for (const ach of progressList) {
       if (ach.condition() && !achievementsUnlocked.has(ach.name)) {
         achievementsUnlocked.add(ach.name);
-        showAchievement(`進捗解除: ${ach.name}${ach.prob ? ` (確率: ${ach.prob})` : ''}`);
+        showAchievement(`進捗解除: ${ach.name} (確率: ${ach.probPercent || ''})`);
         updateAchievementMenu();
       }
     }
@@ -302,7 +304,7 @@
     isGameActive = true;
     correctStreak = 0;
     maniaStreak = 0;
-    achievementsUnlocked.clear();
+    // achievementsUnlocked はリセットしない
     updateAchievementMenu();
     spawnIcon();
   }
@@ -320,7 +322,7 @@
     isGameActive = true;
     correctStreak = 0;
     maniaStreak = 0;
-    achievementsUnlocked.clear();
+    // achievementsUnlocked はリセットしない
     updateAchievementMenu();
     spawnIcon();
 
@@ -359,7 +361,7 @@
     achievementList.innerHTML = '';
     for (const ach of progressList) {
       const li = document.createElement('li');
-      li.textContent = ach.name + (ach.prob ? ` (確率: ${ach.prob})` : '');
+      li.textContent = ach.name + (ach.probPercent ? ` (確率: ${ach.probPercent})` : '');
       if (achievementsUnlocked.has(ach.name)) {
         li.classList.add('unlocked');
       } else {
