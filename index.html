@@ -67,6 +67,7 @@
     let timerId = null;
     let timeLeft = 0;
     let in10SecMode = false;
+    let isGameActive = false; // ★追加したフラグ
 
     const gameArea = document.getElementById('game-area');
     const scoreDisplay = document.getElementById('score');
@@ -120,6 +121,7 @@
       startNormalBtn.disabled = false;
       start10SecBtn.disabled = false;
       in10SecMode = false;
+      isGameActive = false; // ★ゲーム終了フラグ
       spawnIcon();
     }
 
@@ -143,6 +145,7 @@
       seniorBtn.disabled = false;
       startNormalBtn.disabled = true;
       start10SecBtn.disabled = false;
+      isGameActive = true; // ★ゲーム開始フラグ
       spawnIcon();
     }
 
@@ -156,6 +159,7 @@
       seniorBtn.disabled = false;
       startNormalBtn.disabled = false;
       start10SecBtn.disabled = true;
+      isGameActive = true; // ★ゲーム開始フラグ
 
       spawnIcon();
 
@@ -172,11 +176,11 @@
 
     // ボタンイベント
     maniaBtn.addEventListener('click', () => {
-      if (!maniaBtn.disabled) checkAnswer(true);
+      if (isGameActive) checkAnswer(true);
     });
 
     seniorBtn.addEventListener('click', () => {
-      if (!seniorBtn.disabled) checkAnswer(false);
+      if (isGameActive) checkAnswer(false);
     });
 
     startNormalBtn.addEventListener('click', startNormalMode);
@@ -184,7 +188,7 @@
 
     // キーボードイベント
     document.addEventListener('keydown', (event) => {
-      if (maniaBtn.disabled && seniorBtn.disabled) return; // ゲーム中以外は無視
+      if (!isGameActive) return; // ★ゲーム中だけ反応する
 
       if (event.key === 'f' || event.key === 'F') {
         checkAnswer(true);
@@ -193,7 +197,7 @@
       }
     });
 
-    // ページ読み込み時の初期化
+    // 初期状態
     resetGame();
   </script>
 </body>
