@@ -3,20 +3,65 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>アイコン見分けゲーム - 複数進捗管理</title>
+<title>アイコン見分けゲーム - 進捗メニュー＆グラデ</title>
 <style>
+  /* グラデーション背景 */
   body {
-    text-align: center;
+    margin: 0;
     font-family: sans-serif;
-    position: relative;
-    overflow-x: hidden;
+    background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+    height: 100vh;
+    display: flex;
+    color: #fff;
   }
+  /* 左の進捗メニュー */
+  #achievement-menu {
+    width: 220px;
+    background: rgba(0,0,0,0.3);
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+  }
+  #achievement-menu h2 {
+    margin-top: 0;
+    font-size: 20px;
+    border-bottom: 1px solid #fff;
+    padding-bottom: 8px;
+  }
+  #achievement-menu ul {
+    list-style: none;
+    padding-left: 0;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  #achievement-menu li {
+    margin: 6px 0;
+    font-size: 14px;
+  }
+  #achievement-menu li.unlocked {
+    color: #00ff99;
+    font-weight: bold;
+  }
+  #achievement-menu li.locked {
+    color: #ccc;
+  }
+
+  /* ゲーム部分 */
+  #game-wrapper {
+    flex-grow: 1;
+    padding: 20px;
+    box-sizing: border-box;
+    text-align: center;
+  }
+
   #game-area {
     margin: 20px auto;
     width: 300px;
     height: 300px;
-    border: 2px solid black;
+    border: 2px solid white;
     position: relative;
+    background: rgba(255,255,255,0.15);
+    border-radius: 12px;
   }
   .icon {
     width: 30px;
@@ -33,6 +78,18 @@
     padding: 8px 20px;
     margin: 0 10px 10px 10px;
     cursor: pointer;
+    border-radius: 6px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    transition: background-color 0.3s ease;
+  }
+  button:hover:not(:disabled) {
+    background-color: #0056b3;
+  }
+  button:disabled {
+    background-color: #666;
+    cursor: not-allowed;
   }
   #timer {
     font-size: 20px;
@@ -42,6 +99,7 @@
   #mode-buttons {
     margin: 15px 0;
   }
+
   /* 進捗通知スタイル */
   .achievement {
     position: fixed;
@@ -62,24 +120,31 @@
 </style>
 </head>
 <body>
-  <h1>アイコン見分けゲーム</h1>
-  <p>スコア: <span id="score">0</span></p>
-  <p>10秒モード最高スコア: <span id="best-score">0</span></p>
-  <div id="game-area"></div>
 
-  <div id="buttons">
-    <button id="mania-btn" disabled>マニア (Fキー)</button>
-    <button id="senior-btn" disabled>シニア (Jキー)</button>
+  <div id="achievement-menu">
+    <h2>進捗一覧</h2>
+    <ul id="achievement-list"></ul>
   </div>
 
-  <div id="mode-buttons">
-    <button id="start-normal-btn">通常モード開始</button>
-    <button id="start-10sec-btn">10秒モード開始</button>
+  <div id="game-wrapper">
+    <h1>アイコン見分けゲーム</h1>
+    <p>スコア: <span id="score">0</span></p>
+    <p>10秒モード最高スコア: <span id="best-score">0</span></p>
+    <div id="game-area"></div>
+
+    <div id="buttons">
+      <button id="mania-btn" disabled>マニア (Fキー)</button>
+      <button id="senior-btn" disabled>シニア (Jキー)</button>
+    </div>
+
+    <div id="mode-buttons">
+      <button id="start-normal-btn">通常モード開始</button>
+      <button id="start-10sec-btn">10秒モード開始</button>
+    </div>
+
+    <div id="timer"></div>
   </div>
 
-  <div id="timer"></div>
-
-  <!-- 進捗通知コンテナ -->
   <div id="achievement-container"></div>
 
 <script>
@@ -91,11 +156,9 @@
   let in10SecMode = false;
   let isGameActive = false;
 
-  let consecutiveSeniorCount = 0; // シニア連続は今回は未使用ですが残す
-  let correctStreak = 0;           // 正解連続数（全体）
-  let maniaStreak = 0;             // マニア連続数
+  let correctStreak = 0;
+  let maniaStreak = 0;
 
-  // 達成済み進捗を管理（再通知防止）
   const achievementsUnlocked = new Set();
 
   const gameArea = document.getElementById('game-area');
@@ -107,10 +170,22 @@
   const start10SecBtn = document.getElementById('start-10sec-btn');
   const timerDisplay = document.getElementById('timer');
   const achievementContainer = document.getElementById('achievement-container');
+  const achievementList = document.getElementById('achievement-list');
 
-  function randomPosition() {
-    return Math.floor(Math.random() * 270);
-  }
+  // 進捗一覧データ（連続400回を除外）
+  const progressList = [
+    ...Array.from({length: 10}, (_, i) => {
+      const n = i+1;
+      return {
+        name: `マニア${n}連続`,
+        condition: () => maniaStreak >= n,
+        prob: Math.pow(0.7, n).toFixed(4)
+      };
+    }),
+    { name: '連続100回', condition: () => correctStreak >= 100 },
+    { name: '連続200回', condition: () => correctStreak >= 200 },
+    { name: '連続300回', condition: () => correctStreak >= 300 },
+  ];
 
   function spawnIcon() {
     gameArea.innerHTML = '';
@@ -121,7 +196,6 @@
     icon.classList.add('icon');
     icon.src = isTarget ? 'images/target.png' : 'images/fake.png';
 
-    // ランダムサイズ 20~35px
     const iconSize = Math.floor(Math.random() * 16) + 20;
     icon.style.width = `${iconSize}px`;
     icon.style.height = `${iconSize}px`;
@@ -160,35 +234,24 @@
     in10SecMode = false;
     isGameActive = false;
 
-    consecutiveSeniorCount = 0;
     correctStreak = 0;
     maniaStreak = 0;
+    achievementsUnlocked.clear();
+    updateAchievementMenu();
 
     spawnIcon();
   }
 
-  // 進捗解除チェック＆通知
   function checkAchievements() {
-    // 条件と名前の配列
-    const progressList = [
-      { name: 'マニア5連続', condition: maniaStreak >= 5 },
-      { name: '連続100回', condition: correctStreak >= 100 },
-      { name: 'マニア6連続', condition: maniaStreak >= 6 },
-      { name: 'マニア7連続', condition: maniaStreak >= 7 },
-      { name: '連続200回', condition: correctStreak >= 200 },
-      { name: '連続300回', condition: correctStreak >= 300 },
-      { name: '連続400回', condition: correctStreak >= 400 },
-    ];
-
     for (const ach of progressList) {
-      if (ach.condition && !achievementsUnlocked.has(ach.name)) {
+      if (ach.condition() && !achievementsUnlocked.has(ach.name)) {
         achievementsUnlocked.add(ach.name);
-        showAchievement(`進捗解除: ${ach.name}`);
+        showAchievement(`進捗解除: ${ach.name}${ach.prob ? ` (確率: ${ach.prob})` : ''}`);
+        updateAchievementMenu();
       }
     }
   }
 
-  // 進捗通知表示
   function showAchievement(text) {
     const achievement = document.createElement('div');
     achievement.classList.add('achievement');
@@ -212,7 +275,7 @@
       score++;
       updateScoreDisplay();
 
-      correctStreak++; // 連続正解
+      correctStreak++;
       if (currentIsTarget) {
         maniaStreak++;
       } else {
@@ -220,7 +283,6 @@
       }
 
       checkAchievements();
-
       spawnIcon();
     } else {
       gameOver();
@@ -238,11 +300,10 @@
     startNormalBtn.disabled = true;
     start10SecBtn.disabled = false;
     isGameActive = true;
-    achievementsUnlocked.clear(); // 新規開始時に実績クリアもアリ（任意）
-    consecutiveSeniorCount = 0;
     correctStreak = 0;
     maniaStreak = 0;
-
+    achievementsUnlocked.clear();
+    updateAchievementMenu();
     spawnIcon();
   }
 
@@ -257,11 +318,10 @@
     startNormalBtn.disabled = false;
     start10SecBtn.disabled = true;
     isGameActive = true;
-    achievementsUnlocked.clear();
-    consecutiveSeniorCount = 0;
     correctStreak = 0;
     maniaStreak = 0;
-
+    achievementsUnlocked.clear();
+    updateAchievementMenu();
     spawnIcon();
 
     timerId = setInterval(() => {
@@ -275,7 +335,6 @@
     }, 1000);
   }
 
-  // ボタンイベント
   maniaBtn.addEventListener('click', () => {
     if (isGameActive) checkAnswer(true);
   });
@@ -287,10 +346,8 @@
   startNormalBtn.addEventListener('click', startNormalMode);
   start10SecBtn.addEventListener('click', start10SecMode);
 
-  // キーボードイベント
   document.addEventListener('keydown', (event) => {
     if (!isGameActive) return;
-
     if (event.key === 'f' || event.key === 'F') {
       checkAnswer(true);
     } else if (event.key === 'j' || event.key === 'J') {
@@ -298,7 +355,20 @@
     }
   });
 
-  // 初期状態
+  function updateAchievementMenu() {
+    achievementList.innerHTML = '';
+    for (const ach of progressList) {
+      const li = document.createElement('li');
+      li.textContent = ach.name + (ach.prob ? ` (確率: ${ach.prob})` : '');
+      if (achievementsUnlocked.has(ach.name)) {
+        li.classList.add('unlocked');
+      } else {
+        li.classList.add('locked');
+      }
+      achievementList.appendChild(li);
+    }
+  }
+
   resetGame();
 
 </script>
