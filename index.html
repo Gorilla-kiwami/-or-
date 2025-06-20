@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>アイコン見分けゲーム 通常＆10秒モード切替</title>
+<title>アイコン見分けゲーム キーボード対応</title>
 <style>
   body {
     text-align: center;
@@ -49,8 +49,8 @@
   <div id="game-area"></div>
 
   <div id="buttons">
-    <button id="mania-btn" disabled>マニア</button>
-    <button id="senior-btn" disabled>シニア</button>
+    <button id="mania-btn" disabled>マニア (Fキー)</button>
+    <button id="senior-btn" disabled>シニア (Jキー)</button>
   </div>
 
   <div id="mode-buttons">
@@ -101,11 +101,9 @@
 
     function gameOver(message = 'ゲームオーバー！') {
       alert(message + ' スコア: ' + score);
-      if (in10SecMode) {
-        if (score > bestScore10sec) {
-          bestScore10sec = score;
-          alert('最高スコア更新！🎉 ' + bestScore10sec);
-        }
+      if (in10SecMode && score > bestScore10sec) {
+        bestScore10sec = score;
+        alert('最高スコア更新！🎉 ' + bestScore10sec);
       }
       resetGame();
     }
@@ -172,6 +170,7 @@
       }, 1000);
     }
 
+    // ボタンイベント
     maniaBtn.addEventListener('click', () => {
       if (!maniaBtn.disabled) checkAnswer(true);
     });
@@ -183,9 +182,19 @@
     startNormalBtn.addEventListener('click', startNormalMode);
     start10SecBtn.addEventListener('click', start10SecMode);
 
-    // ページ読み込み時は通常モード無効状態にしてアイコン表示だけ
+    // キーボードイベント
+    document.addEventListener('keydown', (event) => {
+      if (maniaBtn.disabled && seniorBtn.disabled) return; // ゲーム中以外は無視
+
+      if (event.key === 'f' || event.key === 'F') {
+        checkAnswer(true);
+      } else if (event.key === 'j' || event.key === 'J') {
+        checkAnswer(false);
+      }
+    });
+
+    // ページ読み込み時の初期化
     resetGame();
   </script>
 </body>
 </html>
-
