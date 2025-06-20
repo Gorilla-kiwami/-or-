@@ -7,6 +7,8 @@ let in10SecMode = false;
 let isGameActive = false;
 
 let correctStreak = 0;
+let maniaStreak = 0;
+let seniorStreak = 0;
 
 const achievementsUnlocked = new Set();
 
@@ -22,10 +24,23 @@ const achievementContainer = document.getElementById('achievement-container');
 const achievementList = document.getElementById('achievement-list');
 
 const progressList = [
-  {
-    name: '連続100回',
-    condition: () => correctStreak >= 100
-  }
+  ...Array.from({ length: 20 }, (_, i) => {
+    const n = i + 1;
+    return {
+      name: `マニア${n}連続`,
+      condition: () => maniaStreak >= n,
+      probPercent: (Math.pow(0.7, n) * 100).toFixed(6) + '%'
+    };
+  }),
+  ...Array.from({ length: 7 }, (_, i) => {
+    const n = i + 1;
+    return {
+      name: `シニア${n}連続`,
+      condition: () => seniorStreak >= n,
+      probPercent: (Math.pow(0.3, n) * 100).toFixed(6) + '%'
+    };
+  }),
+  { name: '連続100回', condition: () => correctStreak >= 100 }
 ];
 
 function spawnIcon() {
@@ -62,6 +77,8 @@ function resetGame() {
   start10SecBtn.disabled = false;
   isGameActive = false;
   correctStreak = 0;
+  maniaStreak = 0;
+  seniorStreak = 0;
   updateAchievementMenu();
   spawnIcon();
 }
@@ -79,6 +96,13 @@ function checkAnswer(isManiaSelected) {
   if ((currentIsTarget && isManiaSelected) || (!currentIsTarget && !isManiaSelected)) {
     score++;
     correctStreak++;
+    if (currentIsTarget) {
+      maniaStreak++;
+      seniorStreak = 0;
+    } else {
+      seniorStreak++;
+      maniaStreak = 0;
+    }
     updateScoreDisplay();
     checkAchievements();
     spawnIcon();
@@ -91,7 +115,7 @@ function checkAchievements() {
   for (const ach of progressList) {
     if (ach.condition() && !achievementsUnlocked.has(ach.name)) {
       achievementsUnlocked.add(ach.name);
-      showAchievement(`進捗解除: ${ach.name}`);
+      showAchievement(`進捗解除: ${ach.name} ${ach.probPercent ? `(確率: ${ach.probPercent})` : ''}`);
       updateAchievementMenu();
     }
   }
@@ -114,7 +138,7 @@ function updateAchievementMenu() {
   achievementList.innerHTML = '';
   for (const ach of progressList) {
     const li = document.createElement('li');
-    li.textContent = ach.name;
+    li.textContent = `${ach.name}${ach.probPercent ? ` (確率: ${ach.probPercent})` : ''}`;
     li.className = achievementsUnlocked.has(ach.name) ? 'unlocked' : 'locked';
     achievementList.appendChild(li);
   }
@@ -124,6 +148,8 @@ function startNormalMode() {
   in10SecMode = false;
   score = 0;
   correctStreak = 0;
+  maniaStreak = 0;
+  seniorStreak = 0;
   updateScoreDisplay();
   maniaBtn.disabled = false;
   seniorBtn.disabled = false;
@@ -138,6 +164,8 @@ function start10SecMode() {
   score = 0;
   timeLeft = 10;
   correctStreak = 0;
+  maniaStreak = 0;
+  seniorStreak = 0;
   updateScoreDisplay();
   maniaBtn.disabled = false;
   seniorBtn.disabled = false;
