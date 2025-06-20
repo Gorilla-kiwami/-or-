@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>アイコン見分けゲーム - 進捗通知システム</title>
+<title>アイコン見分けゲーム - 複数進捗管理</title>
 <style>
   body {
     text-align: center;
@@ -82,191 +82,225 @@
   <!-- 進捗通知コンテナ -->
   <div id="achievement-container"></div>
 
-  <script>
-    let score = 0;
-    let bestScore10sec = 0;
-    let currentIsTarget = null;
-    let timerId = null;
-    let timeLeft = 0;
-    let in10SecMode = false;
-    let isGameActive = false;
+<script>
+  let score = 0;
+  let bestScore10sec = 0;
+  let currentIsTarget = null;
+  let timerId = null;
+  let timeLeft = 0;
+  let in10SecMode = false;
+  let isGameActive = false;
 
-    let consecutiveSeniorCount = 0;
+  let consecutiveSeniorCount = 0; // シニア連続は今回は未使用ですが残す
+  let correctStreak = 0;           // 正解連続数（全体）
+  let maniaStreak = 0;             // マニア連続数
 
-    const gameArea = document.getElementById('game-area');
-    const scoreDisplay = document.getElementById('score');
-    const bestScoreDisplay = document.getElementById('best-score');
-    const maniaBtn = document.getElementById('mania-btn');
-    const seniorBtn = document.getElementById('senior-btn');
-    const startNormalBtn = document.getElementById('start-normal-btn');
-    const start10SecBtn = document.getElementById('start-10sec-btn');
-    const timerDisplay = document.getElementById('timer');
-    const achievementContainer = document.getElementById('achievement-container');
+  // 達成済み進捗を管理（再通知防止）
+  const achievementsUnlocked = new Set();
 
-    function randomPosition() {
-      return Math.floor(Math.random() * 270);
+  const gameArea = document.getElementById('game-area');
+  const scoreDisplay = document.getElementById('score');
+  const bestScoreDisplay = document.getElementById('best-score');
+  const maniaBtn = document.getElementById('mania-btn');
+  const seniorBtn = document.getElementById('senior-btn');
+  const startNormalBtn = document.getElementById('start-normal-btn');
+  const start10SecBtn = document.getElementById('start-10sec-btn');
+  const timerDisplay = document.getElementById('timer');
+  const achievementContainer = document.getElementById('achievement-container');
+
+  function randomPosition() {
+    return Math.floor(Math.random() * 270);
+  }
+
+  function spawnIcon() {
+    gameArea.innerHTML = '';
+    const isTarget = Math.random() < 0.7;
+    currentIsTarget = isTarget;
+
+    const icon = document.createElement('img');
+    icon.classList.add('icon');
+    icon.src = isTarget ? 'images/target.png' : 'images/fake.png';
+
+    // ランダムサイズ 20~35px
+    const iconSize = Math.floor(Math.random() * 16) + 20;
+    icon.style.width = `${iconSize}px`;
+    icon.style.height = `${iconSize}px`;
+
+    icon.style.top = `${Math.floor(Math.random() * (300 - iconSize))}px`;
+    icon.style.left = `${Math.floor(Math.random() * (300 - iconSize))}px`;
+
+    gameArea.appendChild(icon);
+  }
+
+  function updateScoreDisplay() {
+    scoreDisplay.textContent = score;
+    bestScoreDisplay.textContent = bestScore10sec;
+  }
+
+  function gameOver(message = 'ゲームオーバー！') {
+    alert(message + ' スコア: ' + score);
+    if (in10SecMode && score > bestScore10sec) {
+      bestScore10sec = score;
+      alert('最高スコア更新！🎉 ' + bestScore10sec);
     }
-
-    function spawnIcon() {
-      gameArea.innerHTML = '';
-      const isTarget = Math.random() < 0.7;
-      currentIsTarget = isTarget;
-
-      const icon = document.createElement('img');
-      icon.classList.add('icon');
-      icon.src = isTarget ? 'images/target.png' : 'images/fake.png';
-
-      // ランダムサイズ
-      const iconSize = Math.floor(Math.random() * 16) + 20; // 20~35px
-      icon.style.width = `${iconSize}px`;
-      icon.style.height = `${iconSize}px`;
-
-      icon.style.top = `${Math.floor(Math.random() * (300 - iconSize))}px`;
-      icon.style.left = `${Math.floor(Math.random() * (300 - iconSize))}px`;
-
-      gameArea.appendChild(icon);
-
-      // シニア連続出現カウント更新
-      if (!isTarget) {
-        consecutiveSeniorCount++;
-      } else {
-        consecutiveSeniorCount = 0;
-      }
-    }
-
-    function updateScoreDisplay() {
-      scoreDisplay.textContent = score;
-      bestScoreDisplay.textContent = bestScore10sec;
-    }
-
-    function gameOver(message = 'ゲームオーバー！') {
-      alert(message + ' スコア: ' + score);
-      if (in10SecMode && score > bestScore10sec) {
-        bestScore10sec = score;
-        alert('最高スコア更新！🎉 ' + bestScore10sec);
-      }
-      resetGame();
-    }
-
-    function resetGame() {
-      clearInterval(timerId);
-      timerId = null;
-      timeLeft = 0;
-      timerDisplay.textContent = '';
-      score = 0;
-      updateScoreDisplay();
-      maniaBtn.disabled = true;
-      seniorBtn.disabled = true;
-      startNormalBtn.disabled = false;
-      start10SecBtn.disabled = false;
-      in10SecMode = false;
-      isGameActive = false;
-      consecutiveSeniorCount = 0;
-      spawnIcon();
-    }
-
-    function checkAnswer(isManiaSelected) {
-      if ((currentIsTarget && isManiaSelected) || (!currentIsTarget && !isManiaSelected)) {
-        score++;
-        updateScoreDisplay();
-
-        // シニアを当てた場合に進捗チェック
-        if (!currentIsTarget && consecutiveSeniorCount === 5) {
-          showAchievement('進捗解除: シニア5連続！');
-          consecutiveSeniorCount = 0; // カウントリセットで再チャレンジ可能
-        }
-
-        spawnIcon();
-      } else {
-        gameOver();
-      }
-    }
-
-    function startNormalMode() {
-      in10SecMode = false;
-      clearInterval(timerId);
-      timerDisplay.textContent = '';
-      score = 0;
-      updateScoreDisplay();
-      maniaBtn.disabled = false;
-      seniorBtn.disabled = false;
-      startNormalBtn.disabled = true;
-      start10SecBtn.disabled = false;
-      isGameActive = true;
-      spawnIcon();
-    }
-
-    function start10SecMode() {
-      in10SecMode = true;
-      score = 0;
-      timeLeft = 10;
-      updateScoreDisplay();
-      timerDisplay.textContent = `残り時間: ${timeLeft}秒`;
-      maniaBtn.disabled = false;
-      seniorBtn.disabled = false;
-      startNormalBtn.disabled = false;
-      start10SecBtn.disabled = true;
-      isGameActive = true;
-
-      spawnIcon();
-
-      timerId = setInterval(() => {
-        timeLeft--;
-        timerDisplay.textContent = `残り時間: ${timeLeft}秒`;
-        if (timeLeft <= 0) {
-          clearInterval(timerId);
-          timerId = null;
-          gameOver('10秒モード終了！');
-        }
-      }, 1000);
-    }
-
-    // 進捗通知を表示する関数（汎用化）
-    function showAchievement(text) {
-      const achievement = document.createElement('div');
-      achievement.classList.add('achievement');
-      achievement.textContent = text;
-      achievementContainer.appendChild(achievement);
-
-      // 少し遅れてスライドイン
-      setTimeout(() => {
-        achievement.classList.add('show');
-      }, 100);
-
-      // 3秒後にスライドアウトして削除
-      setTimeout(() => {
-        achievement.classList.remove('show');
-        setTimeout(() => {
-          achievement.remove();
-        }, 500);
-      }, 3000);
-    }
-
-    // ボタンイベント
-    maniaBtn.addEventListener('click', () => {
-      if (isGameActive) checkAnswer(true);
-    });
-
-    seniorBtn.addEventListener('click', () => {
-      if (isGameActive) checkAnswer(false);
-    });
-
-    startNormalBtn.addEventListener('click', startNormalMode);
-    start10SecBtn.addEventListener('click', start10SecMode);
-
-    // キーボードイベント
-    document.addEventListener('keydown', (event) => {
-      if (!isGameActive) return;
-
-      if (event.key === 'f' || event.key === 'F') {
-        checkAnswer(true);
-      } else if (event.key === 'j' || event.key === 'J') {
-        checkAnswer(false);
-      }
-    });
-
-    // 初期状態
     resetGame();
-  </script>
+  }
+
+  function resetGame() {
+    clearInterval(timerId);
+    timerId = null;
+    timeLeft = 0;
+    timerDisplay.textContent = '';
+    score = 0;
+    updateScoreDisplay();
+    maniaBtn.disabled = true;
+    seniorBtn.disabled = true;
+    startNormalBtn.disabled = false;
+    start10SecBtn.disabled = false;
+    in10SecMode = false;
+    isGameActive = false;
+
+    consecutiveSeniorCount = 0;
+    correctStreak = 0;
+    maniaStreak = 0;
+
+    spawnIcon();
+  }
+
+  // 進捗解除チェック＆通知
+  function checkAchievements() {
+    // 条件と名前の配列
+    const progressList = [
+      { name: 'マニア5連続', condition: maniaStreak >= 5 },
+      { name: '連続100回', condition: correctStreak >= 100 },
+      { name: 'マニア6連続', condition: maniaStreak >= 6 },
+      { name: 'マニア7連続', condition: maniaStreak >= 7 },
+      { name: '連続200回', condition: correctStreak >= 200 },
+      { name: '連続300回', condition: correctStreak >= 300 },
+      { name: '連続400回', condition: correctStreak >= 400 },
+    ];
+
+    for (const ach of progressList) {
+      if (ach.condition && !achievementsUnlocked.has(ach.name)) {
+        achievementsUnlocked.add(ach.name);
+        showAchievement(`進捗解除: ${ach.name}`);
+      }
+    }
+  }
+
+  // 進捗通知表示
+  function showAchievement(text) {
+    const achievement = document.createElement('div');
+    achievement.classList.add('achievement');
+    achievement.textContent = text;
+    achievementContainer.appendChild(achievement);
+
+    setTimeout(() => {
+      achievement.classList.add('show');
+    }, 100);
+
+    setTimeout(() => {
+      achievement.classList.remove('show');
+      setTimeout(() => {
+        achievement.remove();
+      }, 500);
+    }, 3000);
+  }
+
+  function checkAnswer(isManiaSelected) {
+    if ((currentIsTarget && isManiaSelected) || (!currentIsTarget && !isManiaSelected)) {
+      score++;
+      updateScoreDisplay();
+
+      correctStreak++; // 連続正解
+      if (currentIsTarget) {
+        maniaStreak++;
+      } else {
+        maniaStreak = 0;
+      }
+
+      checkAchievements();
+
+      spawnIcon();
+    } else {
+      gameOver();
+    }
+  }
+
+  function startNormalMode() {
+    in10SecMode = false;
+    clearInterval(timerId);
+    timerDisplay.textContent = '';
+    score = 0;
+    updateScoreDisplay();
+    maniaBtn.disabled = false;
+    seniorBtn.disabled = false;
+    startNormalBtn.disabled = true;
+    start10SecBtn.disabled = false;
+    isGameActive = true;
+    achievementsUnlocked.clear(); // 新規開始時に実績クリアもアリ（任意）
+    consecutiveSeniorCount = 0;
+    correctStreak = 0;
+    maniaStreak = 0;
+
+    spawnIcon();
+  }
+
+  function start10SecMode() {
+    in10SecMode = true;
+    score = 0;
+    timeLeft = 10;
+    updateScoreDisplay();
+    timerDisplay.textContent = `残り時間: ${timeLeft}秒`;
+    maniaBtn.disabled = false;
+    seniorBtn.disabled = false;
+    startNormalBtn.disabled = false;
+    start10SecBtn.disabled = true;
+    isGameActive = true;
+    achievementsUnlocked.clear();
+    consecutiveSeniorCount = 0;
+    correctStreak = 0;
+    maniaStreak = 0;
+
+    spawnIcon();
+
+    timerId = setInterval(() => {
+      timeLeft--;
+      timerDisplay.textContent = `残り時間: ${timeLeft}秒`;
+      if (timeLeft <= 0) {
+        clearInterval(timerId);
+        timerId = null;
+        gameOver('10秒モード終了！');
+      }
+    }, 1000);
+  }
+
+  // ボタンイベント
+  maniaBtn.addEventListener('click', () => {
+    if (isGameActive) checkAnswer(true);
+  });
+
+  seniorBtn.addEventListener('click', () => {
+    if (isGameActive) checkAnswer(false);
+  });
+
+  startNormalBtn.addEventListener('click', startNormalMode);
+  start10SecBtn.addEventListener('click', start10SecMode);
+
+  // キーボードイベント
+  document.addEventListener('keydown', (event) => {
+    if (!isGameActive) return;
+
+    if (event.key === 'f' || event.key === 'F') {
+      checkAnswer(true);
+    } else if (event.key === 'j' || event.key === 'J') {
+      checkAnswer(false);
+    }
+  });
+
+  // 初期状態
+  resetGame();
+
+</script>
 </body>
 </html>
