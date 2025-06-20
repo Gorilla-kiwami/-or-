@@ -137,10 +137,12 @@ function showAchievement(text) {
 function updateAchievementMenu() {
   achievementList.innerHTML = '';
   for (const ach of progressList) {
-    const li = document.createElement('li');
-    li.textContent = `${ach.name}${ach.probPercent ? ` (確率: ${ach.probPercent})` : ''}`;
-    li.className = achievementsUnlocked.has(ach.name) ? 'unlocked' : 'locked';
-    achievementList.appendChild(li);
+    if (achievementsUnlocked.has(ach.name)) {
+      const li = document.createElement('li');
+      li.textContent = `${ach.name}${ach.probPercent ? ` (確率: ${ach.probPercent})` : ''}`;
+      li.className = 'unlocked';
+      achievementList.appendChild(li);
+    }
   }
 }
 
@@ -201,3 +203,4 @@ document.addEventListener('keydown', (e) => {
 });
 
 resetGame();
+updateAchievementMenu();  // 最初にリストを更新しておく
