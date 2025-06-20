@@ -6,9 +6,13 @@ let timeLeft = 0;
 let in10SecMode = false;
 let isGameActive = false;
 
-let correctStreak = 0;
-let maniaStreak = 0;
-let seniorStreak = 0;
+let correctStreak = 0;       // 現在の連続正解（ゲーム中）
+let maniaStreak = 0;         // 現在のマニア連続正解
+let seniorStreak = 0;        // 現在のシニア連続正解
+
+let maxManiaStreak = 0;      // 今までの最大マニア連続
+let maxSeniorStreak = 0;     // 今までの最大シニア連続
+let totalCorrect = 0;        // 全ゲーム通算正解数
 
 const achievementsUnlocked = new Set();
 
@@ -23,24 +27,46 @@ const timerDisplay = document.getElementById('timer');
 const achievementContainer = document.getElementById('achievement-container');
 const achievementList = document.getElementById('achievement-list');
 
+// 進捗リスト（最大連続のみ）
 const progressList = [
+  // マニア最大連続 1〜20
   ...Array.from({ length: 20 }, (_, i) => {
     const n = i + 1;
     return {
       name: `マニア${n}連続`,
-      condition: () => maniaStreak >= n,
+      condition: () => maxManiaStreak >= n,
       probPercent: (Math.pow(0.7, n) * 100).toFixed(6) + '%'
     };
   }),
+  // シニア最大連続 1〜7
   ...Array.from({ length: 7 }, (_, i) => {
     const n = i + 1;
     return {
       name: `シニア${n}連続`,
-      condition: () => seniorStreak >= n,
+      condition: () => maxSeniorStreak >= n,
       probPercent: (Math.pow(0.3, n) * 100).toFixed(6) + '%'
     };
   }),
-  { name: '連続100回', condition: () => correctStreak >= 100 }
+  // 連続正解50回
+  {
+    name: '連続正解50回',
+    condition: () => correctStreak >= 50
+  },
+  // 10秒モード5点以上
+  {
+    name: '10秒モードで5点以上',
+    condition: () => bestScore10sec >= 5
+  },
+  // 10秒モードで20点以上
+  {
+    name: '10秒モードで20点以上',
+    condition: () => bestScore10sec >= 20
+  },
+  // 合計正解500回
+  {
+    name: '合計正解500回',
+    condition: () => totalCorrect >= 500
+  }
 ];
 
 function spawnIcon() {
@@ -70,21 +96,24 @@ function resetGame() {
   timerId = null;
   timeLeft = 0;
   score = 0;
+  correctStreak = 0;
+  maniaStreak = 0;
+  seniorStreak = 0;
+
   updateScoreDisplay();
   maniaBtn.disabled = true;
   seniorBtn.disabled = true;
   startNormalBtn.disabled = false;
   start10SecBtn.disabled = false;
   isGameActive = false;
-  correctStreak = 0;
-  maniaStreak = 0;
-  seniorStreak = 0;
+
   updateAchievementMenu();
   spawnIcon();
 }
 
 function gameOver(message = 'ゲームオーバー！') {
   alert(`${message} スコア: ${score}`);
+
   if (in10SecMode && score > bestScore10sec) {
     bestScore10sec = score;
     alert(`新記録！ スコア: ${bestScore10sec}`);
@@ -96,13 +125,18 @@ function checkAnswer(isManiaSelected) {
   if ((currentIsTarget && isManiaSelected) || (!currentIsTarget && !isManiaSelected)) {
     score++;
     correctStreak++;
+    totalCorrect++;
+
     if (currentIsTarget) {
       maniaStreak++;
       seniorStreak = 0;
+      if (maniaStreak > maxManiaStreak) maxManiaStreak = maniaStreak;
     } else {
       seniorStreak++;
       maniaStreak = 0;
+      if (seniorStreak > maxSeniorStreak) maxSeniorStreak = seniorStreak;
     }
+
     updateScoreDisplay();
     checkAchievements();
     spawnIcon();
@@ -203,4 +237,4 @@ document.addEventListener('keydown', (e) => {
 });
 
 resetGame();
-updateAchievementMenu();  // 最初にリストを更新しておく
+updateAchievementMenu();
