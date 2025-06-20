@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>アイコン見分けゲーム - 進捗20連続＆継続管理</title>
+<title>アイコン見分けゲーム - 全進捗管理</title>
 <style>
-  /* グラデーション背景 */
   body {
     margin: 0;
     font-family: sans-serif;
@@ -14,7 +13,6 @@
     display: flex;
     color: #fff;
   }
-  /* 左の進捗メニュー */
   #achievement-menu {
     width: 220px;
     background: rgba(0,0,0,0.3);
@@ -46,7 +44,6 @@
     color: #ccc;
   }
 
-  /* ゲーム部分 */
   #game-wrapper {
     flex-grow: 1;
     padding: 20px;
@@ -99,8 +96,6 @@
   #mode-buttons {
     margin: 15px 0;
   }
-
-  /* 進捗通知スタイル */
   .achievement {
     position: fixed;
     top: 20px;
@@ -158,8 +153,8 @@
 
   let correctStreak = 0;
   let maniaStreak = 0;
+  let seniorStreak = 0;
 
-  // 進捗解除済み管理（消さない仕様）
   const achievementsUnlocked = new Set();
 
   const gameArea = document.getElementById('game-area');
@@ -173,16 +168,26 @@
   const achievementContainer = document.getElementById('achievement-container');
   const achievementList = document.getElementById('achievement-list');
 
-  // 進捗一覧（マニア連続1～20とその他）
   const progressList = [
+    // マニア連続 1〜20
     ...Array.from({length: 20}, (_, i) => {
       const n = i + 1;
       return {
         name: `マニア${n}連続`,
         condition: () => maniaStreak >= n,
-        probPercent: (Math.pow(0.7, n) * 100).toFixed(1) + '%'
+        probPercent: (Math.pow(0.7, n) * 100).toFixed(6) + '%'
       };
     }),
+    // シニア連続 1〜7
+    ...Array.from({length: 7}, (_, i) => {
+      const n = i + 1;
+      return {
+        name: `シニア${n}連続`,
+        condition: () => seniorStreak >= n,
+        probPercent: (Math.pow(0.3, n) * 100).toFixed(6) + '%'
+      };
+    }),
+    // 連続正解回数
     { name: '連続100回', condition: () => correctStreak >= 100 },
     { name: '連続200回', condition: () => correctStreak >= 200 },
     { name: '連続300回', condition: () => correctStreak >= 300 },
@@ -237,10 +242,9 @@
 
     correctStreak = 0;
     maniaStreak = 0;
-    // achievementsUnlocked はリセットしない
+    seniorStreak = 0;
 
     updateAchievementMenu();
-
     spawnIcon();
   }
 
@@ -280,7 +284,9 @@
       correctStreak++;
       if (currentIsTarget) {
         maniaStreak++;
+        seniorStreak = 0;
       } else {
+        seniorStreak++;
         maniaStreak = 0;
       }
 
@@ -304,7 +310,7 @@
     isGameActive = true;
     correctStreak = 0;
     maniaStreak = 0;
-    // achievementsUnlocked はリセットしない
+    seniorStreak = 0;
     updateAchievementMenu();
     spawnIcon();
   }
@@ -322,7 +328,7 @@
     isGameActive = true;
     correctStreak = 0;
     maniaStreak = 0;
-    // achievementsUnlocked はリセットしない
+    seniorStreak = 0;
     updateAchievementMenu();
     spawnIcon();
 
