@@ -3,11 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>アイコン見分けゲーム キーボード対応</title>
+<title>アイコン見分けゲーム - 進捗通知システム</title>
 <style>
   body {
     text-align: center;
     font-family: sans-serif;
+    position: relative;
+    overflow-x: hidden;
   }
   #game-area {
     margin: 20px auto;
@@ -40,6 +42,23 @@
   #mode-buttons {
     margin: 15px 0;
   }
+  /* 進捗通知スタイル */
+  .achievement {
+    position: fixed;
+    top: 20px;
+    right: -300px;
+    background-color: #00c300;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 16px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transition: right 0.5s ease;
+    z-index: 999;
+  }
+  .achievement.show {
+    right: 20px;
+  }
 </style>
 </head>
 <body>
@@ -60,6 +79,9 @@
 
   <div id="timer"></div>
 
+  <!-- 進捗通知コンテナ -->
+  <div id="achievement-container"></div>
+
   <script>
     let score = 0;
     let bestScore10sec = 0;
@@ -67,7 +89,9 @@
     let timerId = null;
     let timeLeft = 0;
     let in10SecMode = false;
-    let isGameActive = false; // ★追加したフラグ
+    let isGameActive = false;
+
+    let consecutiveSeniorCount = 0;
 
     const gameArea = document.getElementById('game-area');
     const scoreDisplay = document.getElementById('score');
@@ -77,32 +101,38 @@
     const startNormalBtn = document.getElementById('start-normal-btn');
     const start10SecBtn = document.getElementById('start-10sec-btn');
     const timerDisplay = document.getElementById('timer');
+    const achievementContainer = document.getElementById('achievement-container');
 
     function randomPosition() {
       return Math.floor(Math.random() * 270);
     }
 
-   function spawnIcon() {
-  gameArea.innerHTML = '';
-  const isTarget = Math.random() < 0.7;
-  currentIsTarget = isTarget;
+    function spawnIcon() {
+      gameArea.innerHTML = '';
+      const isTarget = Math.random() < 0.7;
+      currentIsTarget = isTarget;
 
-  const icon = document.createElement('img');
-  icon.classList.add('icon');
-  icon.src = isTarget ? 'images/target.png' : 'images/fake.png';
+      const icon = document.createElement('img');
+      icon.classList.add('icon');
+      icon.src = isTarget ? 'images/target.png' : 'images/fake.png';
 
-  // ★ここでランダムサイズを決定！
-  const iconSize = Math.floor(Math.random() * 16) + 20; // 20〜35px
-  icon.style.width = `${iconSize}px`;
-  icon.style.height = `${iconSize}px`;
+      // ランダムサイズ
+      const iconSize = Math.floor(Math.random() * 16) + 20; // 20~35px
+      icon.style.width = `${iconSize}px`;
+      icon.style.height = `${iconSize}px`;
 
-  // ★ランダム位置もサイズに合わせて再計算
-  icon.style.top = `${Math.floor(Math.random() * (300 - iconSize))}px`;
-  icon.style.left = `${Math.floor(Math.random() * (300 - iconSize))}px`;
+      icon.style.top = `${Math.floor(Math.random() * (300 - iconSize))}px`;
+      icon.style.left = `${Math.floor(Math.random() * (300 - iconSize))}px`;
 
-  gameArea.appendChild(icon);
-}
+      gameArea.appendChild(icon);
 
+      // シニア連続出現カウント更新
+      if (!isTarget) {
+        consecutiveSeniorCount++;
+      } else {
+        consecutiveSeniorCount = 0;
+      }
+    }
 
     function updateScoreDisplay() {
       scoreDisplay.textContent = score;
@@ -130,7 +160,8 @@
       startNormalBtn.disabled = false;
       start10SecBtn.disabled = false;
       in10SecMode = false;
-      isGameActive = false; // ★ゲーム終了フラグ
+      isGameActive = false;
+      consecutiveSeniorCount = 0;
       spawnIcon();
     }
 
@@ -138,6 +169,13 @@
       if ((currentIsTarget && isManiaSelected) || (!currentIsTarget && !isManiaSelected)) {
         score++;
         updateScoreDisplay();
+
+        // シニアを当てた場合に進捗チェック
+        if (!currentIsTarget && consecutiveSeniorCount === 5) {
+          showAchievement('進捗解除: シニア5連続！');
+          consecutiveSeniorCount = 0; // カウントリセットで再チャレンジ可能
+        }
+
         spawnIcon();
       } else {
         gameOver();
@@ -154,7 +192,7 @@
       seniorBtn.disabled = false;
       startNormalBtn.disabled = true;
       start10SecBtn.disabled = false;
-      isGameActive = true; // ★ゲーム開始フラグ
+      isGameActive = true;
       spawnIcon();
     }
 
@@ -168,7 +206,7 @@
       seniorBtn.disabled = false;
       startNormalBtn.disabled = false;
       start10SecBtn.disabled = true;
-      isGameActive = true; // ★ゲーム開始フラグ
+      isGameActive = true;
 
       spawnIcon();
 
@@ -181,6 +219,27 @@
           gameOver('10秒モード終了！');
         }
       }, 1000);
+    }
+
+    // 進捗通知を表示する関数（汎用化）
+    function showAchievement(text) {
+      const achievement = document.createElement('div');
+      achievement.classList.add('achievement');
+      achievement.textContent = text;
+      achievementContainer.appendChild(achievement);
+
+      // 少し遅れてスライドイン
+      setTimeout(() => {
+        achievement.classList.add('show');
+      }, 100);
+
+      // 3秒後にスライドアウトして削除
+      setTimeout(() => {
+        achievement.classList.remove('show');
+        setTimeout(() => {
+          achievement.remove();
+        }, 500);
+      }, 3000);
     }
 
     // ボタンイベント
@@ -197,7 +256,7 @@
 
     // キーボードイベント
     document.addEventListener('keydown', (event) => {
-      if (!isGameActive) return; // ★ゲーム中だけ反応する
+      if (!isGameActive) return;
 
       if (event.key === 'f' || event.key === 'F') {
         checkAnswer(true);
