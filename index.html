@@ -1,20 +1,97 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アイコン見分けゲーム</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>アイコン見分けゲーム ボタン判定版</title>
+<style>
+  body {
+    text-align: center;
+    font-family: sans-serif;
+  }
+  #game-area {
+    margin: 20px auto;
+    width: 300px;
+    height: 300px;
+    border: 2px solid black;
+    position: relative;
+  }
+  .icon {
+    width: 30px;
+    height: 30px;
+    object-fit: cover;
+    position: absolute;
+    cursor: default; /* 画像はクリックしない */
+  }
+  #buttons {
+    margin-top: 15px;
+  }
+  button {
+    font-size: 18px;
+    padding: 8px 20px;
+    margin: 0 10px;
+    cursor: pointer;
+  }
+</style>
 </head>
 <body>
-    <h1>アイコン見分けゲーム</h1>
-    <p>スコア: <span id="score">0</span></p>
-    <div id="game-area"></div>
-    <div id="buttons">
-        <button id="mania-btn">マニア</button>
-        <button id="senior-btn">シニア</button>
-    </div>
+  <h1>アイコン見分けゲーム ボタン判定版</h1>
+  <p>スコア: <span id="score">0</span></p>
+  <div id="game-area"></div>
+  <div id="buttons">
+    <button id="mania-btn">マニア</button>
+    <button id="senior-btn">シニア</button>
+  </div>
 
-    <script src="script.js"></script>
+  <script>
+    let score = 0;
+    const gameArea = document.getElementById('game-area');
+    const scoreDisplay = document.getElementById('score');
+    const maniaBtn = document.getElementById('mania-btn');
+    const seniorBtn = document.getElementById('senior-btn');
+
+    let currentIsTarget = null; // 今の画像がtargetかどうか（true/false）
+
+    function randomPosition() {
+      return Math.floor(Math.random() * 270); // 300 - 30
+    }
+
+    function spawnIcon() {
+      gameArea.innerHTML = '';
+      const isTarget = Math.random() < 0.7;
+      currentIsTarget = isTarget;
+
+      const icon = document.createElement('img');
+      icon.classList.add('icon');
+      icon.src = isTarget ? 'images/target.png' : 'images/fake.png';
+      icon.style.top = `${randomPosition()}px`;
+      icon.style.left = `${randomPosition()}px`;
+      gameArea.appendChild(icon);
+    }
+
+    function gameOver() {
+      alert('ゲームオーバー！スコア: ' + score);
+      score = 0;
+      scoreDisplay.textContent = score;
+      spawnIcon();
+    }
+
+    function checkAnswer(isManiaSelected) {
+      // target.png のときはマニア(true)が正解
+      // fake.png のときはシニア(false)が正解
+      if ((currentIsTarget && isManiaSelected) || (!currentIsTarget && !isManiaSelected)) {
+        score++;
+        scoreDisplay.textContent = score;
+        spawnIcon();
+      } else {
+        gameOver();
+      }
+    }
+
+    maniaBtn.addEventListener('click', () => checkAnswer(true));
+    seniorBtn.addEventListener('click', () => checkAnswer(false));
+
+    spawnIcon();
+  </script>
 </body>
 </html>
