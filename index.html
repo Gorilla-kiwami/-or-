@@ -1,39 +1,20 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>アイコン見分けゲーム</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アイコン見分けゲーム</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-  <div id="achievement-menu">
-    <h2>進捗一覧</h2>
-    <ul id="achievement-list"></ul>
-  </div>
-
-  <div id="game-wrapper">
-    <h1>アイコン見分けゲーム</h1>
+    <h1>アイコン見分けゲーム ボタン判定版</h1>
     <p>スコア: <span id="score">0</span></p>
-    <p>10秒モード最高スコア: <span id="best-score">0</span></p>
     <div id="game-area"></div>
-
     <div id="buttons">
-      <button id="mania-btn" disabled>マニア (Fキー)</button>
-      <button id="senior-btn" disabled>シニア (Jキー)</button>
+        <button id="mania-btn">マニア</button>
+        <button id="senior-btn">シニア</button>
     </div>
 
-    <div id="mode-buttons">
-      <button id="start-normal-btn">通常モード開始</button>
-      <button id="start-10sec-btn">10秒モード開始</button>
-    </div>
-
-    <div id="timer"></div>
-  </div>
-
-  <div id="achievement-container"></div>
-
-  <script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
