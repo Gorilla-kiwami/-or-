@@ -4,16 +4,16 @@ const scoreDisplay = document.getElementById('score');
 const maniaBtn = document.getElementById('mania-btn');
 const seniorBtn = document.getElementById('senior-btn');
 
-let currentIsTarget = null;
+let currentIsTarget = null; // 現在の画像の正誤情報
 
 function randomPosition() {
-    return Math.floor(Math.random() * (300 - 30)); // 安全なランダム位置
+    return Math.floor(Math.random() * (300 - 30)); // 画像の表示範囲を確保
 }
 
 function spawnIcon() {
     gameArea.innerHTML = '';
 
-    const isTarget = Math.random() < 0.7;
+    const isTarget = Math.random() < 0.7; // 70%でtarget.png
     currentIsTarget = isTarget;
 
     const icon = document.createElement('img');
@@ -33,6 +33,8 @@ function gameOver() {
 }
 
 function checkAnswer(isManiaSelected) {
+    // マニアボタンは target.png が正解
+    // シニアボタンは fake.png が正解
     if ((currentIsTarget && isManiaSelected) || (!currentIsTarget && !isManiaSelected)) {
         score++;
         scoreDisplay.textContent = score;
@@ -46,3 +48,4 @@ maniaBtn.addEventListener('click', () => checkAnswer(true));
 seniorBtn.addEventListener('click', () => checkAnswer(false));
 
 spawnIcon();
+
